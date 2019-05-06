@@ -47,7 +47,7 @@ server.post("/api/login", (req, res) => {
     });
 });
 
-server.get("/api/users", (req, res) => {
+server.get("/api/users", (req, protected, res) => {
   Users.find()
     .then(users => {
       res.json(users);
@@ -55,5 +55,24 @@ server.get("/api/users", (req, res) => {
     .catch(err => res.send(err));
 });
 
+function protected() {
+  const { username, password } = req.headers;
+  if (username && password) {
+    Users.findBy({ username })
+      .first()
+      .then(user => {
+        if (user && bcrypt.compareSync(password, user.password)) {
+          res.status(200).json({ message: `Welcome ${user.username}!` });
+        } else {
+          res.status(401).json({ message: "Invalid Credentials" });
+        }
+      })
+      .catch(error => {
+        res.status(500).json(error);
+      });
+  } else {
+    res.status(400).json({ message: "Please provide credentials" });
+  }
+}
 const port = process.env.PORT || 5000;
 server.listen(port, () => console.log(`\n** Running on port ${port} **\n`));
